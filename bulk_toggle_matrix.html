@@ -1,0 +1,70 @@
+<h2 class="sr-only">Ma trận permission theo role có chọn nhiều dòng và nhiều cột để bật hoặc tắt hàng loạt cùng lúc, thay vì bật từng ô riêng lẻ</h2>
+<style>
+.switch{position:relative;display:inline-block;width:30px;height:17px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border-strong);border-radius:20px;transition:background .15s}
+.slider:before{position:absolute;content:"";height:13px;width:13px;left:2px;top:2px;background:var(--surface-2);border-radius:50%;transition:transform .15s}
+.switch input:checked + .slider{background:#0F6E56}
+.switch input:checked + .slider:before{transform:translateX(13px)}
+.cellwrap{display:flex;align-items:center;justify-content:center;height:44px;border-top:0.5px solid var(--border);border-left:0.5px solid var(--border)}
+.rowlabel{display:flex;align-items:center;gap:8px;padding:0 10px;height:44px;border-top:0.5px solid var(--border)}
+.colhead{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;font-size:11px;color:var(--text-secondary);font-weight:500}
+.grouprow{display:flex;align-items:center;gap:6px;padding:9px 10px;background:var(--surface-1);font-size:13px;font-weight:500;cursor:pointer}
+</style>
+
+<div id="toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;background:var(--surface-1);border-radius:var(--radius);font-size:13px;color:var(--text-secondary)">
+  <span id="selcount">Đã chọn: 0 permission × 0 role</span>
+  <span style="flex:1"></span>
+  <button id="btnOn" disabled onclick="bulkSet(true)">Bật cho ô đã chọn</button>
+  <button id="btnOff" disabled onclick="bulkSet(false)">Tắt cho ô đã chọn</button>
+</div>
+
+<div id="grid" style="overflow-x:auto"></div>
+
+<script>
+const roles = ["CA","SSE","WA","AE","ISA","SSA","PM","SU","BM","FDH","DPM"];
+const rowsPeople = [
+  {id:"r0", label:"Xem hồ sơ khách hàng", code:"CUSTOMER . Record Detail . Xem", granted:[1,1,1,0,0,0,0,1,0,0,0]},
+  {id:"r1", label:"Sửa thông tin liên hệ", code:"CUSTOMER . Record Detail . Sửa", granted:[1,0,1,0,0,0,0,0,0,0,0]},
+  {id:"r2", label:"Xem CareBy Assignment", code:"CAREBY_ASSIGNMENT . Related List . Xem", granted:[1,1,1,1,0,0,0,1,1,0,0]}
+];
+const selRows = new Set();
+const selCols = new Set();
+
+function updateToolbar(){
+  document.getElementById('selcount').textContent = "Đã chọn: " + selRows.size + " permission × " + selCols.size + " role";
+  const has = selRows.size>0 && selCols.size>0;
+  document.getElementById('btnOn').disabled = !has;
+  document.getElementById('btnOff').disabled = !has;
+}
+function toggleRow(id,checked){ checked?selRows.add(id):selRows.delete(id); updateToolbar(); }
+function toggleCol(i,checked){ checked?selCols.add(i):selCols.delete(i); updateToolbar(); }
+function bulkSet(val){
+  selRows.forEach(rid=>{ selCols.forEach(ci=>{ const el=document.getElementById('cell-'+rid+'-'+ci); if(el) el.checked=val; }); });
+}
+
+const grid = document.getElementById('grid');
+const labelW = 230;
+grid.style.display='grid';
+grid.style.gridTemplateColumns = labelW+'px repeat('+roles.length+', 46px)';
+grid.style.minWidth = (labelW + roles.length*46)+'px';
+
+let html = '<div></div>';
+roles.forEach((r,i)=>{
+  html += '<div class="colhead"><input type="checkbox" onchange="toggleCol('+i+',this.checked)">'+r+'</div>';
+});
+
+html += '<div style="grid-column:1 / -1" class="grouprow"><i class="ti ti-chevron-down" style="font-size:15px" aria-hidden="true"></i><span style="width:8px;height:8px;border-radius:2px;background:#378ADD;display:inline-block"></span>People — PS_HoSoKhachHang</div>';
+
+rowsPeople.forEach(row=>{
+  html += '<div class="rowlabel"><input type="checkbox" onchange="toggleRow(\''+row.id+'\',this.checked)"><div><div style="font-size:13px">'+row.label+'</div><div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">'+row.code+'</div></div></div>';
+  row.granted.forEach((g,ci)=>{
+    html += '<div class="cellwrap"><label class="switch"><input type="checkbox" id="cell-'+row.id+'-'+ci+'" '+(g?'checked':'')+'><span class="slider"></span></label></div>';
+  });
+});
+
+html += '<div style="grid-column:1 / -1" class="grouprow"><i class="ti ti-chevron-right" style="font-size:15px" aria-hidden="true"></i><span style="width:8px;height:8px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Engagement — PS_TuongTacKhachHang</div>';
+html += '<div style="grid-column:1 / -1" class="grouprow"><i class="ti ti-chevron-right" style="font-size:15px" aria-hidden="true"></i><span style="width:8px;height:8px;border-radius:2px;background:#D85A30;display:inline-block"></span>Opportunity — PS_DeXuatDichVu</div>';
+
+grid.innerHTML = html;
+</script>
